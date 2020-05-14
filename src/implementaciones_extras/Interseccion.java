@@ -1,6 +1,6 @@
 package implementaciones_extras;
 
-public class Interseccion extends Superior
+public class Interseccion extends Indicador
 {
 	public Interseccion(int id, double latitud, double longitud) 
 	{

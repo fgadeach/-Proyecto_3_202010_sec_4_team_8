@@ -1,59 +1,23 @@
 package model.logic;
 
-import implementaciones_extras.Superior;
+import implementaciones_extras.Indicador;
 
-public class Policia extends Superior implements Comparable<Policia> 
+public class Policia extends Indicador implements Comparable<Policia> 
 {
 
-	private String name;
-	private String city;
-	private int dpCapacity;
+	private int id;
 
-
-	public Policia(int id, String name, String city, double latitude, double longitude, int dpCapacity) {
+	public Policia(int id, double latitud, double longitud) {
 		
-		super(id, longitude, latitude);
+		super(id, longitud, latitud);
 
-		this.name = name;
-		this.city = city;
-
-		this.dpCapacity = dpCapacity;
-
+		this.id = id;
 	}
 
-	public String darName() 
+	public int darId() 
 	{
-		return name;
+		return id;
 	}
-
-
-	public void cambiarName(String name) 
-	{
-		this.name = name;
-	}
-
-
-	public String darCity() 
-	{
-		return city;
-	}
-
-
-	public void cambiarCity(String city) 
-	{
-		this.city = city;
-	}
-	public int darDpCapacity() 
-	{
-		return dpCapacity;
-	}
-
-
-	public void cambiarDpCapacity(int dpCapacity) 
-	{
-		this.dpCapacity = dpCapacity;
-	}
-
 
 	@Override
 	public int compareTo(Policia o) {
@@ -64,8 +28,7 @@ public class Policia extends Superior implements Comparable<Policia>
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
-		return String.valueOf(super.id + ";" + super.latitud + ";" + super.longitud + ";" + name + ";" 
-				+ city + ";" + dpCapacity);
+		return String.valueOf(super.id + ";" + super.latitud + ";" + super.longitud);
 	}
 
 }

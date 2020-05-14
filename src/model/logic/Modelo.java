@@ -24,7 +24,7 @@ import controller.Controller;
 import implementaciones_extras.Conexion;
 import implementaciones_extras.Haversine;
 import implementaciones_extras.Interseccion;
-import implementaciones_extras.Superior;
+import implementaciones_extras.Indicador;
 
 
 /**
@@ -33,30 +33,25 @@ import implementaciones_extras.Superior;
  */
 public class Modelo {
 
-	private Graph<Integer, Superior , Conexion> Graph = new Graph<Integer,Superior , Conexion>(0);
+	private Graph<Integer, Indicador , Conexion> Graph = new Graph<Integer,Indicador , Conexion>(0);
 
 	private int numeroVerticesEstacion =0;
 	private int numeroArcosMixtos = 0;
 
 	public void loadData() throws NumberFormatException, Exception
 	{
-		long cronomInicial = System.currentTimeMillis();
-		long memoryBeforeCase1 = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
 
-		this.loadIntersecciones(Controller.RUTA_ARCOS);
-		this.loadMallaVial(Controller.RUTA_NODOS);
+
+		this.loadIntersecciones(Controller.RUTA_NODOS);
+		this.loadMallaVial(Controller.RUTA_ARCOS);
 		this.loadStations(Controller.POLICIA);
+
 		this.guardarGraph();
 
-		long cronomFinal = System.currentTimeMillis();
-		long duration = cronomFinal - cronomInicial;
 		System.out.println("Total vertices cargados: " + Graph.E());
 		System.out.println("Numero de vertices estacion: " + numeroVerticesEstacion);
 		System.out.println("Total arcos cargados: " + Graph.V());
 		System.out.println("Numero de arcos mixtos: " + numeroArcosMixtos);
-		long memoryAfterCase1 = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-		System.out.println("Tiempo en cargar: " + duration + " milisegundos \nMemoria utilizada:  "+ ((memoryAfterCase1 - memoryBeforeCase1)/1000000.0) + " MB");
-
 	}
 
 	/**
@@ -64,20 +59,31 @@ public class Modelo {
 	 * @param tripsFile the route of the file with the data that will be loaded
 	 */
 
-	private void loadStations(String stationsFile)
+	private void loadStations(String estacionpolicia)
 	{
-		try 
-		{
-			CSVReader reader = new CSVReader(new FileReader (stationsFile));
+		JSONParser parser = new JSONParser();
+		try {     
+			Object obj = parser.parse(new FileReader(estacionpolicia));
 
-			String [] nextLine;
-			reader.readNext();
+			JSONObject jsonObject =  (JSONObject) obj;
+			JSONArray jsArray = (JSONArray) jsonObject.get("features");
 
-			while((nextLine = reader.readNext()) != null)
+			for(Object o: jsArray) 
 			{
-				Policia station = new Policia (Integer.parseInt(nextLine[0]), nextLine[1],nextLine[2],Double.parseDouble(nextLine[3]),Double.parseDouble(nextLine[4]), Integer.parseInt(nextLine[5]));
+				JSONObject comp = (JSONObject) o;	
+				JSONObject properties =  (JSONObject) comp.get("features");
+				JSONObject geometry =  (JSONObject) comp.get("geometry");	
+				String coordenadas = String.valueOf(geometry.get("coordinates"));
+				coordenadas = coordenadas.replaceAll("\\[","");
+				coordenadas = coordenadas.replaceAll("\\]","");
 
-				//hashStations.put(station.darId(), station);
+				String [] coord = coordenadas.split(",");
+
+				Double latitud = Double.parseDouble(coord[1]);
+				Double longitud = Double.parseDouble(coord[0]);
+
+				Policia station = new Policia (Integer.parseInt(String.valueOf(comp.get("id"))),latitud,longitud);
+
 				Graph.addVertex(Graph.V(), station);
 				numeroVerticesEstacion++;
 				double menorDistancia = Double.MAX_VALUE;
@@ -105,7 +111,7 @@ public class Modelo {
 				numeroArcosMixtos++;
 
 			}
-			reader.close();
+
 		} 
 		catch (Exception e) 
 		{
@@ -117,9 +123,7 @@ public class Modelo {
 
 	private void loadIntersecciones(String interseccionesFile) throws IOException
 	{
-
 		File archivo = new File(interseccionesFile);
-
 		try 
 		{
 			BufferedReader bufferedReader = new BufferedReader(new FileReader(archivo));
@@ -129,8 +133,8 @@ public class Modelo {
 			while((linea = bufferedReader.readLine())!=null)
 			{
 				datos = linea.split(",");
-
 				Integer id = Integer.parseInt(datos[0]);
+
 				double longitud = Double.parseDouble(datos[1]);
 				double latitud = Double.parseDouble(datos[2]);
 				Interseccion interseccion = new Interseccion(id, latitud, longitud);
@@ -183,7 +187,9 @@ public class Modelo {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void guardarGraph() throws IOException {
+	private void guardarGraph() throws IOException 
+	{ 
+
 		JSONObject obj = new JSONObject();
 		JSONArray intersecciones = new JSONArray();
 		JSONArray estaciones = new JSONArray();
@@ -192,7 +198,7 @@ public class Modelo {
 		Iterator<Integer> iter = Graph.iterarVertices();
 		while(iter.hasNext()) {
 			int id = iter.next();
-			Superior nodo = Graph.getInfoVertex(id);
+			Indicador nodo = Graph.getInfoVertex(id);
 
 			if(nodo instanceof Interseccion) {
 				intersecciones.add(nodo.toString());
@@ -202,7 +208,8 @@ public class Modelo {
 		}
 
 		Iterator<Arco<Integer, Conexion>> iterCalles = Graph.arcos().iterator();
-		while(iterCalles.hasNext()) {
+		while(iterCalles.hasNext()) 
+		{
 			Arco<Integer, Conexion> arco = iterCalles.next();
 			String infoArco = String.valueOf(arco.darPrimerVertice() + ";" + arco.darSegundoVertice() + ";"
 					+ arco.darInfo().toString());
@@ -210,31 +217,32 @@ public class Modelo {
 			arcos.add(infoArco);
 		}
 
+
 		obj.put("Intersecciones", intersecciones);
 		obj.put("Estaciones", estaciones);
 		obj.put("Arcos", arcos);
 
-		FileWriter fw = new FileWriter(new File("./src/data/GraphMallaVial.json"), false);
+		FileWriter fw = new FileWriter(new File("./data/MallaVial.geojson"), false);
 		fw.write(obj.toJSONString());
 		fw.close();
 
 	}
 
 	public void cargarGraph() throws NumberFormatException, Exception {
-		Graph = new Graph<Integer, Superior, Conexion>(0);
+		Graph = new Graph<Integer, Indicador, Conexion>(0);
 		int numArcos = 0;
 		int numVertices = 0;
 
 		JSONParser parser = new JSONParser();
 
-		JSONObject obj = (JSONObject) parser.parse(new FileReader("./src/data/GraphMallaVial.json"));
+		JSONObject obj = (JSONObject) parser.parse(new FileReader("./data/MallaVial.geojson"));
 
 		JSONArray array = (JSONArray) obj.get("Estaciones");
 		for(Object o: array) {
 			String object = String.valueOf(o);
 			String[] params = object.split(";");
-			
-			Policia estacion = new Policia(Integer.valueOf(params[1]), params[4], params[5], Double.valueOf(params[2]), Double.valueOf(params[3]), Integer.valueOf(params[6]));
+
+			Policia estacion = new Policia(Integer.valueOf(params[1]), Double.valueOf(params[2]), Double.valueOf(params[3]));
 			//System.out.println(params[0]);
 			Graph.addVertex(Integer.valueOf(params[0]), estacion);
 			numVertices ++;
@@ -258,8 +266,8 @@ public class Modelo {
 
 			Conexion calle = new Conexion(Double.valueOf(params[2]));
 			Graph.addEdge(Integer.valueOf(params[0]), Integer.valueOf(params[1]), calle);
-			Superior nodo1 = Graph.getInfoVertex(Integer.valueOf(params[0]));
-			Superior nodo2 = Graph.getInfoVertex(Integer.valueOf(params[1]));
+			Indicador nodo1 = Graph.getInfoVertex(Integer.valueOf(params[0]));
+			Indicador nodo2 = Graph.getInfoVertex(Integer.valueOf(params[1]));
 
 			if(nodo1 instanceof Policia||nodo2 instanceof Policia ) 
 			{
@@ -275,17 +283,17 @@ public class Modelo {
 
 	public void dibujarGraph() throws IOException
 	{
-		File archivo = new File("./src/data/Graph.html");
+		File archivo = new File("./data/Mallav.html");
 		PrintWriter pw = new PrintWriter(archivo);
 
 		pw.println("<!DOCTYPE html>\r\n" + 
 				"<html>\r\n" + 
 				"<head>\r\n" + 
 				"<meta charset=utf-8 />\r\n" + 
-				"<title>A simple map</title>\r\n" + 
+				"<title>Malla vial Bogota</title>\r\n" + 
 				"<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />\r\n" + 
-				"<script src='https://api.mapbox.com/mapbox.js/v3.1.1/mapbox.js'></script>\r\n" + 
-				"<link href='https://api.mapbox.com/mapbox.js/v3.1.1/mapbox.css' rel='stylesheet' />\r\n" + 
+				"<script src='https://api.mapbox.com/mapbox-gl-js/v1.10.0/mapbox-gl.js'></script>\r\n" + 
+				"<link href='https://api.mapbox.com/mapbox-gl-js/v1.10.0/mapbox-gl.css" + 
 				"<style>\r\n" + 
 				"  body { margin:0; padding:0; }\r\n" + 
 				"  #map { position:absolute; top:0; bottom:0; width:100%; }\r\n" + 
@@ -294,9 +302,9 @@ public class Modelo {
 				"<body>\r\n" + 
 				"<div id='map'></div>\r\n" + 
 				"<script>\r\n" + 
-				"L.mapbox.accessToken = 'pk.eyJ1IjoidmR1YXJ0ZSIsImEiOiJjam9kNzZid2Ewc3Q1M3JwYjc2amI0NTB1In0.cZCxfASnsAYOMzlKwJPG_A';\r\n" + 
+				"L.mapbox.accessToken = 'pk.eyJ1IjoiZmdhZGVhIiwiYSI6ImNrYTBmeGd0ajBvZ3AzZm5hZmhybTRidjMifQ.8X1Y7u_mGMgIw1y7s2aFhQ;\r\n" + 
 				"var map = L.mapbox.map('map', 'mapbox.streets')\r\n" + 
-				"    .setView([41.943139372530865, -87.68479897232211], 100);");
+				"    .setView([4.582989396000016, -74.08921298299998], 100);");
 
 		Iterator<String> iter = Graph.iterarArcos();
 		while(iter.hasNext())
@@ -305,11 +313,11 @@ public class Modelo {
 			String act = iter.next();
 			String info[] = act.split("-");
 
-			Superior sup1 = Graph.getInfoVertex(Integer.parseInt(info[0]));
-			Superior sup2 = Graph.getInfoVertex(Integer.parseInt(info[1]));
+			Indicador id1 = Graph.getInfoVertex(Integer.parseInt(info[0]));
+			Indicador id2 = Graph.getInfoVertex(Integer.parseInt(info[1]));
 
 
-			pw.println("L.circle(L.latLng("+sup1.darLatitud()+", "+sup1.darLongitud()+"), 7, {\r\n" + 
+			pw.println("L.circle(L.latLng("+id1.darLatitud()+", "+id1.darLongitud()+"), 7, {\r\n" + 
 					"    stroke: false,\r\n" + 
 					"    fill: true,\r\n" + 
 					"    fillOpacity: 1,\r\n" + 
@@ -317,7 +325,7 @@ public class Modelo {
 					"    className: \"circle_500\"\r\n" + 
 					"}).addTo(map);");
 
-			pw.println("L.circle(L.latLng("+sup2.darLatitud()+", "+sup2.darLongitud()+"), 7, {\r\n" + 
+			pw.println("L.circle(L.latLng("+id2.darLatitud()+", "+id2.darLongitud()+"), 7, {\r\n" + 
 					"    stroke: false,\r\n" + 
 					"    fill: true,\r\n" + 
 					"    fillOpacity: 1,\r\n" + 
@@ -325,13 +333,12 @@ public class Modelo {
 					"    className: \"circle_500\"\r\n" + 
 					"}).addTo(map);");
 
-			pw.println("var line_point = [["+sup1.darLatitud()+", "+sup1.darLongitud()+"], ["+sup2.darLatitud()+","+sup2.darLongitud()+"]];\r\n" + 
+			pw.println("var line_point = [["+id1.darLatitud()+", "+id1.darLongitud()+"], ["+id2.darLatitud()+","+id2.darLongitud()+"]];\r\n" + 
 					"    var polyline_opt = {\r\n" + 
 					"      color : \"#5b94c6\"\r\n" + 
 					"    }\r\n" + 
 					"\r\n" + 
 					"    L.polyline(line_point, polyline_opt).addTo(map);");
-
 		}
 		pw.println();
 

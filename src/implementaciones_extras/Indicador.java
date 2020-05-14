@@ -1,12 +1,12 @@
 package implementaciones_extras;
 
-public abstract class Superior 
-{
+public abstract class Indicador {
+
 	protected int id;
 	protected double longitud;
 	protected double latitud;
 	
-	public Superior(int id, double longitud, double latitud)
+	public Indicador(int id, double longitud, double latitud)
 	{
 		this.id=id;
 		this.latitud=latitud;
