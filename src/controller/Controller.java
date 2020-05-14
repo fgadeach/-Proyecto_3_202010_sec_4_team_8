@@ -21,7 +21,7 @@ public class Controller {
 	/*
 	 * 
 	 */
-	
+
 	/* Instancia del Modelo*/
 	private Modelo modelo;
 
@@ -30,14 +30,17 @@ public class Controller {
 
 
 
-	public static final String ruta="./data/comparendos1.geojson";
+	public static final String arcos="./data/bogota_arcos.txt";
+	public static final String vertices="./data/bogota_vertices.txt";
+	public static final String jsonAV="./data/grafo.geojson";
+	public static final String POLICIA="./data/estacionpolicia.geojson";
 	/**
 	 * Crear la vista y el modelo del proyecto
 	 * @param capacidad tamaNo inicial del arreglo
 	 */
 	public Controller()
 	{
-		
+
 		view = new View();
 		modelo = new Modelo();
 	}
@@ -53,16 +56,42 @@ public class Controller {
 
 			int option = lector.nextInt();
 			switch(option){
-			
-			case 0:
-					
-			break;
 
+			case 0:
+				modelo = new Modelo(); 
+				try {
+					modelo.cargarGraph(vertices, arcos);
+					System.out.println("numero de arcos "+modelo.numeroArcos());
+					System.out.println("numero de vertices "+modelo.numeroVertices());
+					modelo.guardarGraph();
+				} catch (Exception e) 
+				{
+					System.out.println("no carga");
+				}
+				break;
+
+			case 1:
+
+				try {
+					modelo.loadGraph(jsonAV);
+				} catch (Exception e) 
+				{
+					System.out.println("no carga");
+				}
+				break;
+			case 2:
+
+				try {
+					modelo.loadGraphPolicia(POLICIA);
+				} catch (Exception e) 
+				{
+					System.out.println("no carga");
+				}
+				break;
 
 			default: 
 				System.out.println("--------- \n Opcion Invalida !! \n---------");
 				break;
-
 			}
 		}
 	}
