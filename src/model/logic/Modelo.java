@@ -283,70 +283,72 @@ public class Modelo {
 
 	public void dibujarGraph() throws IOException
 	{
-		File archivo = new File("./data/Mallav.html");
-		PrintWriter pw = new PrintWriter(archivo);
+		File file = new File("hola.html");
 
-		pw.println("<!DOCTYPE html>\r\n" + 
-				"<html>\r\n" + 
-				"<head>\r\n" + 
-				"<meta charset=utf-8 />\r\n" + 
-				"<title>Malla vial Bogota</title>\r\n" + 
-				"<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />\r\n" + 
-				"<script src='https://api.mapbox.com/mapbox-gl-js/v1.10.0/mapbox-gl.js'></script>\r\n" + 
-				"<link href='https://api.mapbox.com/mapbox-gl-js/v1.10.0/mapbox-gl.css" + 
-				"<style>\r\n" + 
-				"  body { margin:0; padding:0; }\r\n" + 
-				"  #map { position:absolute; top:0; bottom:0; width:100%; }\r\n" + 
-				"</style>\r\n" + 
-				"</head>\r\n" + 
-				"<body>\r\n" + 
-				"<div id='map'></div>\r\n" + 
-				"<script>\r\n" + 
-				"L.mapbox.accessToken = 'pk.eyJ1IjoiZmdhZGVhIiwiYSI6ImNrYTBmeGd0ajBvZ3AzZm5hZmhybTRidjMifQ.8X1Y7u_mGMgIw1y7s2aFhQ;\r\n" + 
-				"var map = L.mapbox.map('map', 'mapbox.streets')\r\n" + 
-				"    .setView([4.582989396000016, -74.08921298299998], 100);");
-
+		PrintWriter pr = new PrintWriter(file);
+		pr.println(" <!DOCTYPE html>\n" +
+		"<html>\n" +
+		"  <head>\n" +
+		"    <title>Mapa</title>\n" +
+		"    <meta name=\"viewport\" content=\"initial-scale=1.0\">\n" +
+		"    <meta charset=\"utf-8\">\n" +
+		"    <style>\n" +
+		"      /* Always set the map height explicitly to define the size of the div\n" +
+		"       * element that contains the map. */\n" +
+		"      #map {\n" +
+		"        height: 100%;\n" +
+		"      }\n" +
+		"      /* Optional: Makes the sample page fill the window. */\n" +
+		"      html, body \n" +
+		"      {\n" +
+		"        height: 100%;\n" +
+		"        margin: 0;\n" +
+		"        padding: 0;\n" +
+		"      }\n" +
+		"    </style> \n" +
+		"  </head> \n" +
+		"  <body> \n" +
+		"    <div id=\"map\"></div> \n" +
+		"    <script> \n");	
+		pr.println(" function initMap() {\n"+
+				"    var map = new google.maps.Map(document.getElementById('map'), {\n"+
+				"      zoom: 12,\n"+
+				"      center: {lat: 4.647956, lng: -74.083781},\n"+
+				"      mapTypeId: 'terrain'\n"+
+				"    });\n");
 		Iterator<String> iter = Graph.iterarArcos();
+
 		while(iter.hasNext())
 		{	
 
 			String act = iter.next();
 			String info[] = act.split("-");
 
-			Indicador id1 = Graph.getInfoVertex(Integer.parseInt(info[0]));
-			Indicador id2 = Graph.getInfoVertex(Integer.parseInt(info[1]));
-
-
-			pw.println("L.circle(L.latLng("+id1.darLatitud()+", "+id1.darLongitud()+"), 7, {\r\n" + 
-					"    stroke: false,\r\n" + 
-					"    fill: true,\r\n" + 
-					"    fillOpacity: 1,\r\n" + 
-					"    fillColor: \"#5b94c6\",\r\n" + 
-					"    className: \"circle_500\"\r\n" + 
-					"}).addTo(map);");
-
-			pw.println("L.circle(L.latLng("+id2.darLatitud()+", "+id2.darLongitud()+"), 7, {\r\n" + 
-					"    stroke: false,\r\n" + 
-					"    fill: true,\r\n" + 
-					"    fillOpacity: 1,\r\n" + 
-					"    fillColor: \"#5b94c6\",\r\n" + 
-					"    className: \"circle_500\"\r\n" + 
-					"}).addTo(map);");
-
-			pw.println("var line_point = [["+id1.darLatitud()+", "+id1.darLongitud()+"], ["+id2.darLatitud()+","+id2.darLongitud()+"]];\r\n" + 
-					"    var polyline_opt = {\r\n" + 
-					"      color : \"#5b94c6\"\r\n" + 
-					"    }\r\n" + 
+			Indicador sup1 = Graph.getInfoVertex(Integer.parseInt(info[0]));
+			Indicador sup2 = Graph.getInfoVertex(Integer.parseInt(info[1]));
+			
+			pr.println("var flightPlanCoordinates = [\r\n" + 
+				"    {lat:"+ sup1.darLatitud() +", lng:"+ sup1.darLongitud()+"},\r\n" +  
+				"    {lat:"+ sup2.darLatitud()+", lng:"+ sup2.darLongitud()+"}\r\n" + 
+					"  ];");
+			pr.println("var flightPath = new google.maps.Polyline({\r\n" + 
+					"    path: flightPlanCoordinates,\r\n" + 
+					"    geodesic: true,\r\n" + 
+					"    strokeColor: '#FF0000',\r\n" + 
+					"    strokeOpacity: 1.0,\r\n" + 
+					"    strokeWeight: 1.0\r\n" + 
+					"  });\r\n" + 
 					"\r\n" + 
-					"    L.polyline(line_point, polyline_opt).addTo(map);");
+					"  flightPath.setMap(map);");
 		}
-		pw.println();
-
-		pw.println("</script>");
-		pw.println("</body>");
-		pw.println("</html>");
-		pw.close();
-
+		
+		pr.println("}\n");
+		pr.println("  </script>\n" +"<script async defer     src=\"https://maps.googleapis.com/maps/api/js?key=AIzaSyB4IQ2SrwpoZ_6fs9jOngVXxHNU1CtVK3g&callback=initMap\">");
+		pr.println("</script>");
+		pr.println("</body>");
+		pr.println("</html>");
+		pr.close();
+		java.awt.Desktop.getDesktop().browse(file.toURI());
 	}
 }
 
